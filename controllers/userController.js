@@ -6,22 +6,27 @@ const { trusted } = require('mongoose')
 const getAllUsers = async (req, res) => {
     const users = await User.find({ role: 'user' })
 
-    const alteredUser = users.map((user) => {
-        const { name, email } = user
-        return { name, email }
-    })
+    // const alteredUser = users.map((user) => {
+    //     const { name, email } = user
+    //     return { name, email }
+    // })
 
-    console.log(alteredUser)
-    res.status(StatusCodes.OK).json({ users: alteredUser })
+    // console.log(alteredUser)
+    res.status(StatusCodes.OK).json({ users })
 
 
 }
 
 const getSingleUser = async (req, res) => {
-    console.log(req.user.id)
-    const user = await User.findOne({ _id: req.user.id }).select('-_id -password -role')
+    const user = await User.findOne({ _id: req.params.id }).select('-password')
     if (!user) {
         throw new CustomApi(`No user found with such Id ${req.params.id}`, StatusCodes.UNAUTHORIZED)
+    }
+    if (req.user.id !== user._id.toString()) {
+        if (req.user.role === 'admin') {
+            res.status(StatusCodes.OK).json({ user })
+        }
+        throw new CustomApi('You are not permitted to perform this operation', StatusCodes.BAD_REQUEST)
     }
     res.status(StatusCodes.OK).json({ user })
 
@@ -56,7 +61,6 @@ const updateUserPassword = async (req, res) => {
     res.status(StatusCodes.CREATED).json({ msg: 'Password Succesfully updated' })
 }
 const showCurrentUser = async (req, res) => {
-    console.log(req.user.id)
     const user = await User.findOne({ _id: req.user.id })
     if (!user) {
         throw new CustomApi('No such User exists', StatusCodes.BAD_REQUEST)

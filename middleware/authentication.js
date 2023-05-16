@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken')
+const User = require('../models/user')
 const CustomApi = require('../errors/custom-api')
 const { StatusCodes } = require('http-status-codes')
 const authenticationMiddleware = async (req, res, next) => {
@@ -11,7 +12,7 @@ const authenticationMiddleware = async (req, res, next) => {
 
     const token = req.cookies.token
     const decoded = jwt.decode(token);
-    console.log(decoded);
+    // console.log(decoded);
     if (!token) {
         throw new CustomApi('Token does not exist', StatusCodes.UNAUTHORIZED)
     }
@@ -25,4 +26,12 @@ const authenticationMiddleware = async (req, res, next) => {
         res.json({ error })
     }
 }
-module.exports = authenticationMiddleware
+const authorizePermissions = async (req, res, next) => {
+    console.log(req.user)
+    const user = await User.findOne({ _id: req.user.id })
+    if (user.role !== 'admin') {
+        throw new CustomApi('You cannot perform this operation', StatusCodes.BAD_REQUEST)
+    }
+    next();
+}
+module.exports = { authenticationMiddleware, authorizePermissions }

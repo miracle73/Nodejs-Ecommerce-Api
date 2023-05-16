@@ -38,7 +38,7 @@ UserSchema.pre('save', async function () {
     this.password = hashedPassword
 })
 UserSchema.methods.createJWT = async function () {
-    const token = await jwt.sign({ id: this._id, name: this.name }, process.env.TOKEN_SECRET, { expiresIn: '1d' })
+    const token = await jwt.sign({ id: this._id, name: this.name, role: this.role }, process.env.TOKEN_SECRET, { expiresIn: '1d' })
     return token
 }
 UserSchema.methods.comparePassword = async function (password) {
