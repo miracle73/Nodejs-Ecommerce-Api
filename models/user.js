@@ -29,7 +29,13 @@ const UserSchema = new mongoose.Schema({
         type: String,
         enum: ['admin', 'user'],
         default: 'user'
-    }
+    },
+    verificationToken: String,
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
+    verified: Date
 })
 
 UserSchema.pre('save', async function () {
@@ -42,6 +48,7 @@ UserSchema.methods.createJWT = async function () {
     return token
 }
 UserSchema.methods.comparePassword = async function (password) {
+    console.log(password)
     const isMatch = await bcrypt.compare(password, this.password)
     return isMatch
 }

@@ -12,7 +12,7 @@ const SingleOrderItemSchema = mongoose.Schema({
     },
 });
 
-const ProductSchema = new mongoose.Schema({
+const OrderSchema = new mongoose.Schema({
     tax: {
         type: Number,
         required: true,
