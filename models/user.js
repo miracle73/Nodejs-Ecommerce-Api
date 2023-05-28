@@ -43,9 +43,13 @@ UserSchema.pre('save', async function () {
     const hashedPassword = await bcrypt.hash(this.password, salt)
     this.password = hashedPassword
 })
-UserSchema.methods.createJWT = async function () {
-    const token = await jwt.sign({ id: this._id, name: this.name, role: this.role }, process.env.TOKEN_SECRET, { expiresIn: '1d' })
-    return token
+UserSchema.methods.createJWT = async function (...token) {
+    if (!token) {
+        const token = await jwt.sign({ id: this._id, name: this.name, role: this.role }, process.env.TOKEN_SECRET)
+        return token
+    }
+    const addedToken = await jwt.sign({ id: this._id, name: this.name, role: this.role, token }, process.env.TOKEN_SECRET)
+    return addedToken
 }
 UserSchema.methods.comparePassword = async function (password) {
     console.log(password)

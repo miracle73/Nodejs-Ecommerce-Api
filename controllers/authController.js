@@ -1,4 +1,5 @@
 const User = require('../models/user')
+const Token = require('../models/token')
 const { StatusCodes } = require('http-status-codes')
 const CustomApi = require('../errors/custom-api')
 const crypto = require('crypto')
@@ -43,20 +44,50 @@ const login = async (req, res) => {
         throw new CustomApi('Kindly verify your email first', StatusCodes.NOT_FOUND)
     }
 
+
     const match = await user.comparePassword(password)
     console.log(match)
-    if (match) {
-        const token = await user.createJWT()
-        res.cookie('token', token, {
-            httpOnly: true,
-            expires: new Date(Date.now() + 1000 * 60 * 60 * 3)
-        })
-        return res.status(StatusCodes.OK).json({ msg: "Successfully signed in", token })
-    } else {
+    if (!match) {
         res.status(StatusCodes.BAD_REQUEST).json({ msg: "Please try again" })
     }
+    let refreshToken = ''
 
+    const token = await Token.findOne({ user: user._id })
+
+    if (token) {
+        refreshToken = token.refreshToken
+        const accessTokenJwt = await user.createJWT()
+        const refreshTokenJwt = await user.createJWT(refreshToken)
+        res.cookie('accessToken', accessTokenJwt, {
+            httpOnly: true,
+            maxAge: 1000
+        })
+        res.cookie('refreshToken', refreshTokenJwt, {
+            httpOnly: true,
+            expires: new Date(Date.now() + 1000 * 60 * 60 * 24)
+        })
+        return res.status(StatusCodes.OK).json({ msg: "Successfully signed in" })
+    }
+
+    refreshToken = crypto.randomBytes(40).toString('hex')
+    const userAgent = req.headers['user-agent']
+    const ip = req.ip
+
+    await Token.create({ refreshToken, userAgent, ip, user: user._id })
+    const accessTokenJwt = await user.createJWT()
+    const refreshTokenJwt = await user.createJWT(refreshToken)
+    res.cookie('accessToken', accessTokenJwt, {
+        httpOnly: true,
+        maxAge: 1000
+    })
+    res.cookie('refreshToken', refreshTokenJwt, {
+        httpOnly: true,
+        expires: new Date(Date.now() + 1000 * 60 * 60 * 24)
+    })
+    return res.status(StatusCodes.OK).json({ msg: "Successfully signed in" })
 }
+
+
 const logout = async (req, res) => {
     res.cookie('token', 'logout', {
         httpOnly: true,
