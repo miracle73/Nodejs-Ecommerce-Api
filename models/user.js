@@ -35,7 +35,9 @@ const UserSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    verified: Date
+    verified: Date,
+    passwordToken: String,
+    passwordTokenExpirationDate: Date
 })
 
 UserSchema.pre('save', async function () {
@@ -43,12 +45,12 @@ UserSchema.pre('save', async function () {
     const hashedPassword = await bcrypt.hash(this.password, salt)
     this.password = hashedPassword
 })
-UserSchema.methods.createJWT = async function (...token) {
+UserSchema.methods.createJWT = async function (token) {
     if (!token) {
-        const token = await jwt.sign({ id: this._id, name: this.name, role: this.role }, process.env.TOKEN_SECRET)
+        const token = await jwt.sign({ id: this._id, name: this.name, role: this.role }, process.env.TOKEN_SECRET, { expiresIn: '5h' })
         return token
     }
-    const addedToken = await jwt.sign({ id: this._id, name: this.name, role: this.role, token }, process.env.TOKEN_SECRET)
+    const addedToken = await jwt.sign({ id: this._id, name: this.name, role: this.role, token }, process.env.TOKEN_SECRET, { expiresIn: '5h' })
     return addedToken
 }
 UserSchema.methods.comparePassword = async function (password) {
